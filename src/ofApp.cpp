@@ -49,7 +49,6 @@ void ofApp::liveGameover() {
     spaceBackground.draw(0, 0, ofGetWidth(), ofGetHeight());
     party1Img.draw(50, ofGetHeight()-300, 250, 250);
     party2Img.draw(ofGetWidth() - 300, ofGetHeight() - 300, 250, 250);
-    retryImg.draw(ofGetWidth() / 2 - 190 / 2, ofGetHeight() / 2 - 117 / 2, 208, 117);
 
     verdana14.load("verdana.ttf", 25, false);
     verdana14.setLineHeight(18.0f);
@@ -68,12 +67,6 @@ void ofApp::liveGameover() {
     }
 
     verdana14.drawString(temp, 50, 100);
-
-    if (playRect.inside(mouse.x, mouse.y)) {
-        ofSetLineWidth(1);
-        ofNoFill();
-        ofDrawRectangle(playRect);
-    }
 }
 
 void ofApp::setupMenu() {
@@ -120,23 +113,17 @@ void ofApp::setupGame() {
     light.setPosition(cam.getPosition());
 
     //Create List of Asteroids:
-    Asteroid temp;
+    Asteroid tempA = Asteroid("asteroid/asteroid.obj", ofVec3f((rand() % 7000) - (rand() % 7000), (-0 * 250) - 1000, (rand() % 7000) - (rand() % 7000)));;
     cout << "LOADING\n";
-    for (int a = 1; a < 3; a++) {
-        cout << a << "out of" << 3 << "\n";
-        for (int b = 1; b < 30; b++) {
-            temp = Asteroid("asteroid/asteroid.obj", ofVec3f((rand() % 7000) - (rand() % 7000), -a * (rand() % 500) - 5000, (rand() % 7000) - (rand() % 7000)));
-            asteroidList.push_back(temp);
-            asteroidPointsList.push_back(temp.getPosition());
+    int c = 0;
+    for (int a = 0; a < 3; a++) {
+        for (int b = 0; b < 30; b++) {
+            tempA.setPosition(ofVec3f((rand() % 7000) - (rand() % 7000), (-c * 250) - 1000, (rand() % 7000) - (rand() % 7000)));
+            asteroidList.push_back(tempA);
+            asteroidPositionList.push(c);
+            c += 1;
         }
     }
-    //GUI Setup
-    gui.setup();
-    gui.add(label1.setup("", "Menu:"));
-    gui.add(button1.setup("Press to Open Shop"));
-
-    label1.setBackgroundColor(ofColor(255, 255, 255, 0));
-    button1.setBackgroundColor(ofColor(255, 255, 255, 0));
 }
 
 void ofApp::liveGame() {
@@ -167,7 +154,6 @@ void ofApp::liveGame() {
         menuIsLive = false;
         menuSetup = false;
     }
-    gui.draw();
     ofEnableDepthTest();
 
     //Start Light
@@ -213,26 +199,22 @@ void ofApp::check() {
     }
     */
     //Can speed to check closest asteroid
-    for (int a = 0; a < asteroidPointsList.size(); a++) {
-        //Test
-        int testDistance = glm::distance(tempSpaceship, asteroidPointsList[a]);
-        int pastDistance = tempSpaceship.y - asteroidPointsList[a].y;
-        if (pastDistance < -250) {
-            Asteroid tempAsteroid = asteroidList[a];
-            tempAsteroid.setPosition(ofVec3f(tempSpaceship.x + (rand() % 7000) - (rand() % 7000), tempSpaceship.y - (rand() % 5000) - 5000, tempSpaceship.z + (rand() % 7000) - (rand() % 7000)));
-            asteroidList[a] = tempAsteroid;
-            asteroidPointsList[a] = tempAsteroid.getPosition();
-            break;
+    if (asteroidPositionList.size() > 0){
+        int position = asteroidPositionList.front();
+        int testDistance = glm::distance(tempSpaceship, asteroidList[position].getPosition());
+        int pastDistance = tempSpaceship.y - asteroidList[position].getPosition().y;
+        int position2 = asteroidPositionList.back();
+
+        if (pastDistance < 0) {
+            asteroidList[position].setPosition(ofVec3f(tempSpaceship.x + (rand() % 7000) - (rand() % 7000), asteroidList[position2].getPosition().y - 250, tempSpaceship.z + (rand() % 7000) - (rand() % 7000)));
+            asteroidPositionList.pop();
+            asteroidPositionList.push(position);
         }
-        if (testDistance < 150) {
-            if (checkCollision(spaceship, asteroidList[a])) {
-                lives -= 1;
-                Asteroid tempAsteroid = asteroidList[a];
-                tempAsteroid.setPosition(ofVec3f(tempSpaceship.x + (rand() % 7000) - (rand() % 7000), tempSpaceship.y - (rand() % 5000) - 5000, tempSpaceship.z + (rand() % 7000) - (rand() % 7000)));
-                asteroidList[a] = tempAsteroid;
-                asteroidPointsList[a] = tempAsteroid.getPosition();
-                break;
-            }
+        else if (testDistance < 100 && checkCollision(spaceship, asteroidList[position])) {
+            lives -= 1;
+            asteroidList[position].setPosition(ofVec3f(tempSpaceship.x + (rand() % 7000) - (rand() % 7000), asteroidList[position2].getPosition().y - 250, tempSpaceship.z + (rand() % 7000) - (rand() % 7000)));
+            asteroidPositionList.pop();
+            asteroidPositionList.push(position);
         }
     }
 }
