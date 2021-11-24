@@ -38,19 +38,14 @@ class ofApp : public ofBaseApp {
 		Spaceship spaceship = Spaceship("spaceship/Feisar_Ship.3DS", ofVec3f(0, 0, 0));
 
 		//Astroid Array
+		queue<int> asteroidPositionList;
 		vector<Asteroid> asteroidList;
-		vector<glm::vec3> asteroidPointsList;
 
 		//Light
 		ofLight	light;
 
 		//Camera
 		ofEasyCam cam;
-
-		//GUI
-		ofxPanel gui;
-		ofxButton button1;
-		ofxLabel label1;
 
 		//Boolean
 		bool left, right, up, down;
