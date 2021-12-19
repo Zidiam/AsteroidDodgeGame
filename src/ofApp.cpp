@@ -99,6 +99,7 @@ void ofApp::setupGame() {
     spaceship = Spaceship("spaceship/Feisar_Ship.3DS", ofVec3f(0, 0, 0));
     //Setup Images
     heart.load("images/heart.png");
+    fuelImg.load("images/fuel.png");
 
     gameSetup = true;
     //Setup Values
@@ -106,23 +107,30 @@ void ofApp::setupGame() {
     left = right = up = down = false;
     lives = 3;
     gameIsLive = true;
-    distance = 0;
-
+    density = 25;
     //Setup Positioning
     cam.setPosition(spaceship.getPosition().x, spaceship.getPosition().y + 500, spaceship.getPosition().z + 200);
     light.setPosition(cam.getPosition());
 
     //Create List of Asteroids:
-    Asteroid tempA = Asteroid("asteroid/asteroid.obj", ofVec3f((rand() % 7000) - (rand() % 7000), (-0 * 250) - 1000, (rand() % 7000) - (rand() % 7000)));;
+    Asteroid tempA = Asteroid("asteroid/asteroid.obj", ofVec3f(0,0,0));
     cout << "LOADING\n";
     int c = 0;
-    for (int a = 0; a < 3; a++) {
-        for (int b = 0; b < 30; b++) {
-            tempA.setPosition(ofVec3f((rand() % 7000) - (rand() % 7000), (-c * 250) - 1000, (rand() % 7000) - (rand() % 7000)));
-            asteroidList.push_back(tempA);
-            asteroidPositionList.push(c);
-            c += 1;
-        }
+    for (int a = 0; a < 100; a++) {
+        tempA.setPosition(ofVec3f((rand() % 3000) - (rand() % 3000), (-c * density) - 1000, (rand() % 3000) - (rand() % 3000)));
+        asteroidList.push_back(tempA);
+        asteroidPositionList.push(c);
+        c += 1;
+    }
+
+    //Create List of Gas:
+    Gas tempB = Gas("gas/gas.obj", ofVec3f(0, 0, 0));
+    c = 0;
+    for (int a = 0; a < 10; a++) {
+        tempB.setPosition(ofVec3f((rand() % 3000) - (rand() % 3000), (-c * 20000) - 5000, (rand() % 3000) - (rand() % 3000)));
+        gasList.push_back(tempB);
+        gasPositionList.push(c);
+        c += 1;
     }
 }
 
@@ -135,25 +143,7 @@ void ofApp::liveGame() {
     ofDisableDepthTest();
 
     spaceBackground.draw(0, 0, ofGetWidth(), ofGetHeight());
-    if (lives == 3) {
-        heart.draw(ofGetWidth() - 100, 0, 100, 100);
-        heart.draw(ofGetWidth() - 200, 0, 100, 100);
-        heart.draw(ofGetWidth() - 300, 0, 100, 100);
-    }
-    else if (lives == 2) {
-        heart.draw(ofGetWidth() - 100, 0, 100, 100);
-        heart.draw(ofGetWidth() - 200, 0, 100, 100);
-    }
-    else if (lives == 1) {
-        heart.draw(ofGetWidth() - 100, 0, 100, 100);
-    }
-    else {
-        setupGameover();
-        gameIsLive = false;
-        gameSetup = false;
-        menuIsLive = false;
-        menuSetup = false;
-    }
+    
     ofEnableDepthTest();
 
     //Start Light
@@ -167,6 +157,15 @@ void ofApp::liveGame() {
     for (int a = 0; a < asteroidList.size(); a++) {
         asteroidList[a].draw();
     }
+    for (int a = 0; a < asteroidDummyList.size(); a++) {
+        asteroidDummyList[a].draw();
+    }
+    for (int a = 0; a < gasList.size(); a++) {
+        gasList[a].draw();
+    }
+    for (int a = 0; a < gasDummyList.size(); a++) {
+        gasDummyList[a].draw();
+    }
 
     cam.end();
     light.disable();
@@ -177,46 +176,133 @@ void ofApp::liveGame() {
     ofDisableLighting();
     ofSetColor(255, 255, 0);
     ofDisableDepthTest();
+    ofPopMatrix();
+
+    //Distance
     verdana14.load("verdana.ttf", 12, false);
     verdana14.setLineHeight(18.0f);
     verdana14.setLetterSpacing(1.037);
     verdana14.drawString("Distance: " + ofToString(floor(abs(spaceship.getPosition().y) / 100)), ofGetWidth() / 2 - 100, 15);
 
-    ofPopMatrix();
-    ofDisableDepthTest();
+    //Images
+    if (lives == 3) {
+        heart.draw(ofGetWidth() - 100, 0, 100, 100);
+        heart.draw(ofGetWidth() - 200, 0, 100, 100);
+        heart.draw(ofGetWidth() - 300, 0, 100, 100);
+    }
+    else if (lives == 2) {
+        heart.draw(ofGetWidth() - 100, 0, 100, 100);
+        heart.draw(ofGetWidth() - 200, 0, 100, 100);
+    }
+    else if (lives == 1) {
+        heart.draw(ofGetWidth() - 100, 0, 100, 100);
+    }
+    if (lives == 0 || spaceship.fuel <= 0){
+        setupGameover();
+        gameIsLive = false;
+        gameSetup = false;
+        menuIsLive = false;
+        menuSetup = false;
+    }
+    fuelImg.draw(ofGetWidth() - 50, ofGetHeight() - 25, 25, 25);
+
+    //Draw Fuel Bar
+    ofNoFill(); 
+    ofSetColor(0, 0, 0);
+    ofDrawRectangle(ofGetWidth() - 25, ofGetHeight() - 150, 23, 148);
+    ofFill();
+    ofSetColor(255, 255, 255);
+    ofDrawRectangle(ofGetWidth() - 24, ofGetHeight() - 148, 21, 144);
+    ofSetColor(0, 255, 0);
+    ofDrawRectangle(ofGetWidth() - 24, ofGetHeight() - 148 + spaceship.fuelUsed, 21, 144 - spaceship.fuelUsed);
 }
 
 
 void ofApp::check() {
-    glm::vec3 tempSpaceship = spaceship.getPosition();
-    int remove = -1;
-    /*
-    int pos = spaceship.getPosition().y;
-    if (pos % 500 == 0) {
-        Asteroid temp = Asteroid("asteroid/asteroid.obj", ofVec3f(tempSpaceship.x + (rand() % 7000) - (rand() % 7000), tempSpaceship.y - (rand() % 5000) - 5000, tempSpaceship.z + (rand() % 7000) - (rand() % 7000)));
-        asteroidList.push_back(temp);
-        asteroidPointsList.push_back(temp.getPosition());
-    }
-    */
-    //Can speed to check closest asteroid
-    if (asteroidPositionList.size() > 0){
+    if (asteroidPositionList.size() > 0) {
+        glm::vec3 tempSpaceship = spaceship.getPosition();
         int position = asteroidPositionList.front();
-        int testDistance = glm::distance(tempSpaceship, asteroidList[position].getPosition());
+        int position2 = asteroidList[asteroidPositionList.back()].getPosition().y;
         int pastDistance = tempSpaceship.y - asteroidList[position].getPosition().y;
-        int position2 = asteroidPositionList.back();
-
-        if (pastDistance < 0) {
-            asteroidList[position].setPosition(ofVec3f(tempSpaceship.x + (rand() % 7000) - (rand() % 7000), asteroidList[position2].getPosition().y - 250, tempSpaceship.z + (rand() % 7000) - (rand() % 7000)));
-            asteroidPositionList.pop();
-            asteroidPositionList.push(position);
+        bool destroy = false;
+        if (asteroidDummyList.size() > 0 && tempSpaceship.y - asteroidDummyList.front().getPosition().y < -500) {
+            asteroidDummyList.erase(asteroidDummyList.begin());
         }
-        else if (testDistance < 100 && checkCollision(spaceship, asteroidList[position])) {
+        if (checkCollision(spaceship, asteroidList[position])) {
             lives -= 1;
-            asteroidList[position].setPosition(ofVec3f(tempSpaceship.x + (rand() % 7000) - (rand() % 7000), asteroidList[position2].getPosition().y - 250, tempSpaceship.z + (rand() % 7000) - (rand() % 7000)));
+            destroy = true;
+        }
+        else if (pastDistance < 0) {
+            asteroidDummyList.push_back(asteroidList[position]);
+            destroy = true;
+        }
+        if (destroy) {
+            glm::vec3 newPosition;
+            int pointx = 0;
+            int pointy = position2 - density;
+            int pointz = 0;
+
+            if (left) {
+                pointx = tempSpaceship.x + (rand() % 2000) + (rand() % 2000);
+            }
+            else if (right) {
+                pointx = tempSpaceship.x - (rand() % 2000) - (rand() % 2000);
+            }
+            if (up) {
+                pointz = tempSpaceship.z + (rand() % 2000) + (rand() % 2000);
+            }
+            else if (down) {
+                pointz = tempSpaceship.z - (rand() % 2000) - (rand() % 2000);
+            }
+            if (pointx == 0) {
+                pointx = tempSpaceship.x + (rand() % 2000) - (rand() % 2000);
+            }
+            if (pointz == 0) {
+                pointz = tempSpaceship.z + (rand() % 2000) - (rand() % 2000);
+            }
+            if (rand() % 3 == 1) {
+                newPosition = ofVec3f(tempSpaceship.x + (rand() % 1500) - (rand() % 1500), position2 - density, tempSpaceship.z + (rand() % 1500) - (rand() % 1500));
+            }
+            else {
+                newPosition = ofVec3f(pointx, pointy, pointz);
+            }
+                
+            asteroidList[position].setPosition(newPosition);
             asteroidPositionList.pop();
             asteroidPositionList.push(position);
         }
     }
+
+    if (gasPositionList.size() > 0) {
+        glm::vec3 tempSpaceship = spaceship.getPosition();
+        int position = gasPositionList.front();
+        int position2 = gasList[gasPositionList.back()].getPosition().y;
+        int pastDistance = tempSpaceship.y - gasList[position].getPosition().y;
+        bool destroy = false;
+        if (gasDummyList.size() > 0 && tempSpaceship.y - gasDummyList.front().getPosition().y < -500) {
+            gasDummyList.erase(gasDummyList.begin());
+        }
+        if (checkCollision2(spaceship, gasList[position])) {
+            spaceship.fuel = 144;
+            spaceship.fuelUsed = 0;
+            destroy = true;
+        }
+        else if (pastDistance < 0) {
+            gasDummyList.push_back(gasList[position]);
+            destroy = true;
+        }
+        if (destroy) {
+            glm::vec3 newPosition = ofVec3f(tempSpaceship.x + (rand() % 1500) - (rand() % 1500), position2 - 20000, tempSpaceship.z + (rand() % 1500) - (rand() % 1500));
+            gasList[position].setPosition(newPosition);
+            gasPositionList.pop();
+            gasPositionList.push(position);
+        }
+    }
+
+}
+
+void ofApp::pointsCheck() {
+    int dis = floor(abs(spaceship.getPosition().y) / 100);
 }
 
 //--------------------------------------------------------------
@@ -228,6 +314,7 @@ void ofApp::update() {
     //light.setPosition(cam.getPosition());  
     
     check();
+    pointsCheck();
 }
 
 //--------------------------------------------------------------
@@ -290,35 +377,35 @@ bool ofApp::checkCollision(Spaceship object1, Asteroid object2) {
 
     int n = object1Mesh.getNumVertices();
     int n2 = object2Mesh.getNumVertices();
-    float nearestDistance = 0;
-
-    int nearestIndex = 0;
-    float distance;
-    int realdistance;
+    float realdistance;
     glm::vec3 cur, cur2;
+
     for (int i = 0; i < n; i += 5) {
         for (int z = 0; z < n2; z += 5) {
             cur = object1Mesh.getVertex(i);
             cur2 = object2Mesh.getVertex(z);
-            distance = glm::distance(cur, cur2);
-            if (i == 0 || distance < nearestDistance) {
-                nearestDistance = distance;
-                nearestVertex1 = cur;
-                nearestVertex2 = cur2;
-                nearestIndex = i;
-                realdistance = (abs(abs(nearestVertex1.x) - abs(nearestVertex2.x)) + abs(abs(nearestVertex1.y) - abs(nearestVertex2.y)) + abs(abs(nearestVertex1.z) - abs(nearestVertex2.z))) / 3;
-                if (realdistance <= 3) {
-                    break;
-                }
+            realdistance = ((abs(cur.x - cur2.x) + abs(cur.y - cur2.y) + abs(cur.z - cur2.z)) / 3);
+            if (realdistance <= 5.0) {
+                return true;
             }
         }
+        
     }
 
-    realdistance = (abs(abs(nearestVertex1.x) - abs(nearestVertex2.x)) + abs(abs(nearestVertex1.y) - abs(nearestVertex2.y)) + abs(abs(nearestVertex1.z) - abs(nearestVertex2.z))) / 3;
+    return false;
+}
 
-    if (realdistance <= 3) {
+bool ofApp::checkCollision2(Spaceship object1, Gas object2) {
+    float realdistance;
+    glm::vec3 cur, cur2;
+
+    cur = object1.getPosition();
+    cur2 = object2.getPosition();
+    realdistance = ((abs(cur.x - cur2.x) + abs(cur.y - cur2.y) + abs(cur.z - cur2.z)) / 3);
+    if (realdistance <= 50) {
         return true;
     }
+
     return false;
 }
 

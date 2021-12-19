@@ -5,6 +5,7 @@
 #include "ofxGui.h"
 #include "../Spaceship.h"
 #include "../Asteroid.h"
+#include "../Gas.h"
 #include <iostream>
 #include <vector>
 
@@ -27,7 +28,9 @@ class ofApp : public ofBaseApp {
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 		bool checkCollision(Spaceship object1, Asteroid object2);
+		bool checkCollision2(Spaceship object1, Gas object2);
 		void check();
+		void pointsCheck();
 		void liveGame();
 		void setupGame();
 		void liveMenu();
@@ -39,7 +42,11 @@ class ofApp : public ofBaseApp {
 
 		//Astroid Array
 		queue<int> asteroidPositionList;
-		vector<Asteroid> asteroidList;
+		vector<Asteroid> asteroidList, asteroidDummyList;
+
+		//Gas Array
+		queue<int> gasPositionList;
+		vector<Gas> gasList, gasDummyList;
 
 		//Light
 		ofLight	light;
@@ -53,7 +60,7 @@ class ofApp : public ofBaseApp {
 		bool menuIsLive, menuSetup;
 
 		//Integers
-		int lives, distance;
+		int lives, density;
 
 		//Distance
 		glm::vec3 nearestVertex1, nearestVertex2, asteroidCoords, asteroidMove;
@@ -62,7 +69,7 @@ class ofApp : public ofBaseApp {
 		glm::vec2 mouse;
 
 		//Images
-		ofImage spaceBackground, heart, title, playImg, party1Img, party2Img, retryImg;
+		ofImage spaceBackground, heart, title, playImg, party1Img, party2Img, retryImg, fuelImg;
 
 		//Buttons
 		ofRectangle playRect, retryRect;
